@@ -67,7 +67,7 @@ configure_all_locales_then_ru() {
 }
 
 install_oracle_jdk() {
-  msg_info "Installing Oracle JDK from .deb"
+  msg_info "Installing Oracle JDK 21"
   curl -fsSL -o "${ORACLE_JDK_DEB}" "${ORACLE_JDK_URL}"
   apt-get install -y "${ORACLE_JDK_DEB}"
   java -version
@@ -76,15 +76,15 @@ install_oracle_jdk() {
 }
 
 check_db_mount() {
-  msg_info "Checking /db mountpoint"
+  msg_info "Checking ${PGDATA_DIR%/*/*} mountpoint"
 
   if [[ ! -d /db ]]; then
-    msg_error "/db directory does not exist. Add an LXC mountpoint first."
+    msg_error "/db directory does not exist"
     exit 1
   fi
 
   if ! mountpoint -q /db; then
-    msg_error "/db exists but is not a real mountpoint."
+    msg_error "/db exists, but it is not a mounted volume"
     exit 1
   fi
 
@@ -92,29 +92,33 @@ check_db_mount() {
 }
 
 install_postgresql_15() {
-  msg_info "Installing PostgreSQL 15"
+  msg_info "Installing PostgreSQL 15 from PGDG"
 
   install -d -m 0755 /usr/share/keyrings
   curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
     | gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
 
-  cat > /etc/apt/sources.list.d/pgdg.list <<EOF
-deb [signed-by=/usr/share/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt noble-pgdg main
+  cat > /etc/apt/sources.list.d/pgdg.sources <<'EOF'
+Types: deb
+URIs: https://apt.postgresql.org/pub/repos/apt
+Suites: noble-pgdg
+Components: main
+Signed-By: /usr/share/keyrings/postgresql.gpg
 EOF
 
   apt-get update -y
-  apt-get install -y postgresql-15 postgresql-client-15 postgresql-common
+  apt-get install -y postgresql-common postgresql-15 postgresql-client-15
+
+  systemctl stop postgresql || true
+
+  if pg_lsclusters | awk 'NR>1 {print $1" "$2}' | grep -q '^15 main$'; then
+    pg_dropcluster --stop 15 main
+  fi
 
   mkdir -p /db/postgresql/15
   chown -R postgres:postgres /db/postgresql
   chmod 700 /db/postgresql
   chmod 700 /db/postgresql/15
-
-  systemctl stop postgresql || true
-
-  if pg_lsclusters | awk '{print $1" "$2}' | grep -q '^15 main$'; then
-    pg_dropcluster --stop 15 main
-  fi
 
   pg_createcluster 15 main \
     --datadir="${PGDATA_DIR}" \
