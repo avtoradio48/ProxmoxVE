@@ -81,6 +81,13 @@ variables() {
   if [[ -n "${var_disk:-}" && "${var_disk}" =~ ^[0-9]+$ ]]; then
     export APP_DEFAULT_DISK="${var_disk}"
   fi
+  if [[ -n "${var_db_disk:-}" && "${var_db_disk}" =~ ^[0-9]+$ ]]; then
+  export APP_DEFAULT_DB_DISK="${var_db_disk}"
+  fi
+
+  if [[ -n "${var_db_mount:-}" ]]; then
+  export APP_DEFAULT_DB_MOUNT="${var_db_mount}"
+  fi
 }
 
 source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/api.func)
