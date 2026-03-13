@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source <(curl -fsSL https://raw.githubusercontent.com/avtoradio48/ProxmoxVE/main/misc/build.func)
 
-APP="CustomStack"
+APP="retail"
 var_tags="${var_tags:-database;java;web;tools}"
 var_cpu="${var_cpu:-2}"
 var_ram="${var_ram:-4096}"
